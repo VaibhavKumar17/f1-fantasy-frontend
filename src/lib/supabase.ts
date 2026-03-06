@@ -3,6 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? "";
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
 
+export function isSupabaseConfigured(): boolean {
+  return Boolean(supabaseUrl && supabaseAnonKey);
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /** Remove Supabase auth/session from localStorage to clear old data (fixes lock/AbortError in some cases). Logs user out. */
