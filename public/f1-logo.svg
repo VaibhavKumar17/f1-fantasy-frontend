@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 56" fill="none">
+  <!-- F1 logo: F (three bars) + 1, official red #E10600, transparent background -->
+  <path fill="#E10600" d="M0 0h4v56H0V0zm4 0h64v10H4V0zm0 22h52v10H4V32zm0 24h36v10H4V56z"/>
+  <path fill="#E10600" d="M92 10h-6v46h10V32h14v-10H92V10z"/>
+</svg>

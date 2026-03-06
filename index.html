@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>F1 Fantasy Delhi NCR — Build Your Dream Team</title>
+    <meta name="description" content="Join the Delhi NCR F1 Fantasy community. Pick 5 drivers, compete every race weekend, and climb the leaderboard." />
+    <meta name="author" content="F1 Delhi NCR" />
+
+    <meta property="og:title" content="F1 Fantasy Delhi NCR" />
+    <meta property="og:description" content="Build your dream team. Compete every race weekend." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@Lovable" />
+    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script>
+      // Catch Supabase/IndexedDB "steal" lock error so it doesn't break the app (don't patch console)
+      window.addEventListener("unhandledrejection", function(e) {
+        try {
+          var r = e.reason;
+          var name = (r && r.name) || "";
+          var msg = (r && (r.message !== undefined ? r.message : r)) || "";
+          msg = typeof msg === "string" ? msg : String(msg);
+          if (name === "AbortError" || msg.indexOf("steal") !== -1 || msg.indexOf("Lock broken") !== -1) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          }
+        } catch (_) {}
+      }, true);
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
