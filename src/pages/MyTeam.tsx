@@ -339,7 +339,7 @@ const MyTeam = () => {
   };
 
   return (
-    <div className="min-h-screen bg-carbon pt-20 pb-safe sm:pt-24">
+    <div className="min-h-screen bg-carbon pt-20 pb-28 sm:pt-24 lg:pb-safe">
       <div className="container mx-auto px-3 pb-12 sm:px-4 sm:pb-16">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="mb-2 font-racing text-3xl font-bold tracking-[0.2em] text-gradient-red sm:text-4xl">
@@ -740,6 +740,48 @@ const MyTeam = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile Sticky Action Bar */}
+      {user && !lockClosed && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/90 backdrop-blur-md border-t border-border p-3 flex items-center justify-between gap-4 lg:hidden shadow-[0_-8px_30px_rgba(0,0,0,0.5)] safe-area-inset-bottom">
+          <div className="flex flex-col text-left">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+              <span>🏎️ {selectedDrivers.length}/5</span>
+              <span className="text-muted-foreground/60">•</span>
+              <span>🛠️ {selectedConstructors.length}/2</span>
+            </div>
+            <div className="mt-1 flex flex-col text-[0.65rem] text-muted-foreground">
+              <span>Drivers: ₹{budgetUsed}M/₹{BUDGET_CAP}M</span>
+              <span>Cons: ₹{constructorBudgetUsed}M/₹{CONSTRUCTOR_BUDGET}M</span>
+            </div>
+          </div>
+          <div>
+            {editing ? (
+              <Button
+                size="sm"
+                onClick={() => setShowConfirmDialog(true)}
+                disabled={
+                  selectedDrivers.length < MAX_DRIVERS ||
+                  selectedConstructors.length < MAX_CONSTRUCTORS ||
+                  constructorBudgetUsed > CONSTRUCTOR_BUDGET ||
+                  saving
+                }
+                className="font-racing text-xs tracking-wider px-4 py-2 bg-primary hover:bg-primary/95 text-white glow-red"
+              >
+                {saving ? "SAVING…" : hasLockedOnce ? "UPDATE TEAM" : "LOCK IN TEAM"}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                onClick={() => setEditing(true)}
+                className="font-racing text-xs tracking-wider px-4 py-2"
+              >
+                MODIFY TEAM
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
       
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent className="border-border bg-card/95 backdrop-blur-md">

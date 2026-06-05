@@ -51,10 +51,10 @@ const LeaderboardTable = ({
   onRowClick?: (username: string) => void;
 }) => (
   <>
-    <div className="grid grid-cols-[2.5rem_1fr_auto_3rem] gap-2 border-t border-border/60 px-3 py-2 text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground sm:grid-cols-[3rem_1fr_auto_4rem] sm:gap-3 sm:px-4 sm:text-[0.7rem]">
+    <div className="grid grid-cols-[2.5rem_1fr_3rem] gap-2 border-t border-border/60 px-3 py-2 text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground sm:grid-cols-[3rem_1fr_auto_4rem] sm:gap-3 sm:px-4 sm:text-[0.7rem]">
       <span>#</span>
       <span>Team</span>
-      <span className="opacity-0">Inspect</span>
+      <span className="hidden sm:inline-block opacity-0">Inspect</span>
       <span className="text-right">Pts</span>
     </div>
     <div className="divide-y divide-border/60">
@@ -64,7 +64,7 @@ const LeaderboardTable = ({
         rows.map((row) => (
           <div
             key={`${row.username}-${row.rank}`}
-            className={`group grid grid-cols-[2.5rem_1fr_auto_3rem] items-center gap-2 px-3 py-2.5 text-xs sm:grid-cols-[3rem_1fr_auto_4rem] sm:gap-3 sm:px-4 sm:text-sm transition-all duration-150 ${
+            className={`group grid grid-cols-[2.5rem_1fr_3rem] items-center gap-2 px-3 py-2.5 text-xs sm:grid-cols-[3rem_1fr_auto_4rem] sm:gap-3 sm:px-4 sm:text-sm transition-all duration-150 ${
               username === row.username ? "bg-primary/5 border-l-2 border-primary" : "border-l-2 border-transparent"
             } ${onRowClick ? "cursor-pointer hover:bg-secondary/40 hover:translate-x-1" : ""}`}
             onClick={onRowClick ? () => onRowClick(row.username) : undefined}
@@ -79,7 +79,7 @@ const LeaderboardTable = ({
               )}
             </span>
             {onRowClick && (
-              <span className="text-[0.6rem] font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-wider">
+              <span className="hidden sm:inline-block text-[0.6rem] font-bold text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-wider">
                 Inspect Team
               </span>
             )}
@@ -242,6 +242,54 @@ const Leaderboard = () => {
     setSelectedUserTeam(null);
     setInspectedRound(activeRound);
   };
+  const renderYourPositionCard = () => (
+    <Card className="border-border/60 bg-background/60">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          Your position
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-sm text-muted-foreground">
+        {profileLoading ? (
+          <div className="space-y-2 animate-pulse py-2">
+            <div className="h-4 bg-secondary/80 rounded w-1/3" />
+            <div className="h-8 bg-secondary/80 rounded w-1/2" />
+          </div>
+        ) : !user ? (
+          <>
+            <p>Sign in to see your rank on season and race leaderboards.</p>
+            <div className="rounded-lg border border-dashed border-border/80 bg-background/40 p-4 text-xs">
+              <p className="mb-1 font-medium text-foreground">Not signed in</p>
+              <p className="text-muted-foreground">
+                Sign in and lock in your team to appear on the leaderboards.
+              </p>
+            </div>
+          </>
+        ) : !username ? (
+          <div className="rounded-lg border border-dashed border-border/80 bg-background/40 p-4 text-xs">
+            <p className="mb-1 font-medium text-foreground">Set your username</p>
+            <p className="text-muted-foreground">
+              Add a username in Profile to lock in your team and appear here.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-lg border border-border/80 bg-background/40 p-3">
+              <p className="mb-1 text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground">Season Standing</p>
+              <p className="font-racing text-2xl text-gradient-gold">#{seasonRank ?? "–"}</p>
+              <p className="text-xs text-muted-foreground">{seasonPoints ?? 0} pts</p>
+            </div>
+            <div className="rounded-lg border border-border/80 bg-background/40 p-3">
+              <p className="mb-1 text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground">Current Race</p>
+              <p className="font-racing text-2xl text-gradient-gold">#{currentRaceRank ?? "–"}</p>
+              <p className="text-xs text-muted-foreground">{currentRacePoints ?? 0} pts</p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="min-h-screen bg-carbon pt-20 pb-safe sm:pt-24">
@@ -301,128 +349,57 @@ const Leaderboard = () => {
         )}
 
         {isApiConfigured() && (
-          <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-            {/* Left Section: Three Leaderboards layout */}
-            <div className="order-2 space-y-6 lg:order-1">
-              
-              {/* 1. Primary Leaderboard Card */}
-              <Card className="border-2 border-primary/30 bg-gradient-to-b from-background/80 to-background/40 backdrop-blur-md shadow-2xl relative overflow-hidden transition-all duration-300 hover:border-primary/50">
-                <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
-                  <div>
-                    <CardTitle className="text-base font-bold tracking-wide flex items-center gap-2">
-                      {isWeekendActive ? (
-                        <>
-                          <Calendar className="h-4 w-4 text-primary animate-pulse" />
-                          <span>Current Race: {activeRaceName || `Round ${activeRound}`}</span>
-                        </>
-                      ) : (
-                        <>
-                          <Crown className="h-4 w-4 text-gradient-gold" />
-                          <span>Season Standings</span>
-                        </>
-                      )}
-                    </CardTitle>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {isWeekendActive
-                        ? "Active race weekend standings. Click any player below to inspect setup!"
-                        : "Cumulative points from all closed race weekends."}
-                    </p>
-                  </div>
-                  <Badge className={`flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.16em] ${isWeekendActive ? "bg-primary/20 text-primary border border-primary/30 animate-pulse" : "bg-primary/10 text-primary border border-primary/20"}`}>
-                    {isWeekendActive ? "WEEKEND ACTIVE" : "SEASON PRIMARY"}
-                  </Badge>
-                </CardHeader>
+          <>
+            {/* Mobile-only Your Position Card */}
+            <div className="lg:hidden mb-6">
+              {renderYourPositionCard()}
+            </div>
 
-                <CardContent className="p-0">
-                  <div className="border-t border-border/60 px-4 py-2 text-[0.65rem] text-primary/80 font-medium flex items-center gap-1.5 animate-pulse bg-primary/5">
-                    <span>💡</span>
-                    <span>Click any player below to inspect their lineup in the paddock card!</span>
-                  </div>
-
-                  {isWeekendActive ? (
-                    currentRaceLoading ? (
-                      <div className="px-4 py-8 text-center text-sm text-muted-foreground">Loading current race standings…</div>
-                    ) : currentRaceError ? (
-                      <div className="px-4 py-8 text-center text-sm text-destructive">
-                        {currentRaceErrorObj instanceof Error ? currentRaceErrorObj.message : "Failed to load current race standings"}
-                      </div>
-                    ) : (
-                      <LeaderboardTable
-                        rows={currentRaceLeaderboard}
-                        username={username}
-                        emptyMessage="No current race standings recorded yet."
-                        onRowClick={(clickedUser) => handleSelectRow(clickedUser, activeRound)}
-                      />
-                    )
-                  ) : (
-                    seasonLoading ? (
-                      <div className="px-4 py-8 text-center text-sm text-muted-foreground">Loading season standings…</div>
-                    ) : seasonError ? (
-                      <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                        Season standings are temporarily unavailable.
-                      </div>
-                    ) : (
-                      <LeaderboardTable
-                        rows={seasonLeaderboard}
-                        username={username}
-                        emptyMessage="No season standings recorded yet."
-                        onRowClick={(clickedUser) => handleSelectRow(clickedUser, activeRound)}
-                      />
-                    )
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* 2. Split Secondary Grid (Season/Current and Past) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+              {/* Left Section: Three Leaderboards layout */}
+              <div className="space-y-6">
                 
-                {/* Secondary A: Opposite of Primary */}
-                <Card className="border border-border/60 bg-background/50 backdrop-blur-sm shadow-md transition-all duration-300 hover:border-border">
+                {/* 1. Primary Leaderboard Card */}
+                <Card className="border-2 border-primary/30 bg-gradient-to-b from-background/80 to-background/40 backdrop-blur-md shadow-2xl relative overflow-hidden transition-all duration-300 hover:border-primary/50">
                   <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
                     <div>
-                      <CardTitle className="text-sm font-semibold tracking-wide flex items-center gap-2">
+                      <CardTitle className="text-base font-bold tracking-wide flex items-center gap-2">
                         {isWeekendActive ? (
                           <>
-                            <Crown className="h-4 w-4 text-muted-foreground" />
-                            <span>Season Standings</span>
+                            <Calendar className="h-4 w-4 text-primary animate-pulse" />
+                            <span>Current Race: {activeRaceName || `Round ${activeRound}`}</span>
                           </>
                         ) : (
                           <>
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>Current Race: {activeRaceName || `Round ${activeRound}`}</span>
+                            <Crown className="h-4 w-4 text-gradient-gold" />
+                            <span>Season Standings</span>
                           </>
                         )}
                       </CardTitle>
-                      <p className="mt-1 text-[0.65rem] text-muted-foreground leading-normal">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         {isWeekendActive
-                          ? "Cumulative points from all closed race weekends."
-                          : "Qualifying starts soon. Standings update during active weekend."}
+                          ? "Active race weekend standings. Click any player below to inspect setup!"
+                          : "Cumulative points from all closed race weekends."}
                       </p>
                     </div>
-                    <Badge className="bg-secondary/80 text-muted-foreground border border-border text-[0.6rem] font-bold uppercase tracking-wider">
-                      {isWeekendActive ? "SEASON" : "RACE"}
+                    <Badge className={`flex items-center gap-1 text-[0.65rem] font-bold uppercase tracking-[0.16em] ${isWeekendActive ? "bg-primary/20 text-primary border border-primary/30 animate-pulse" : "bg-primary/10 text-primary border border-primary/20"}`}>
+                      {isWeekendActive ? "WEEKEND ACTIVE" : "SEASON PRIMARY"}
                     </Badge>
                   </CardHeader>
-                  
+
                   <CardContent className="p-0">
+                    <div className="border-t border-border/60 px-4 py-2 text-[0.65rem] text-primary/80 font-medium flex items-center gap-1.5 animate-pulse bg-primary/5">
+                      <span>💡</span>
+                      <span>Click any player below to inspect their lineup in the paddock card!</span>
+                    </div>
+
                     {isWeekendActive ? (
-                      seasonLoading ? (
-                        <div className="px-4 py-6 text-center text-xs text-muted-foreground">Loading season standings…</div>
-                      ) : seasonError ? (
-                        <div className="px-4 py-6 text-center text-xs text-muted-foreground">Season standings unavailable.</div>
-                      ) : (
-                        <LeaderboardTable
-                          rows={seasonLeaderboard}
-                          username={username}
-                          emptyMessage="No season standings recorded yet."
-                          onRowClick={(clickedUser) => handleSelectRow(clickedUser, activeRound)}
-                        />
-                      )
-                    ) : (
                       currentRaceLoading ? (
-                        <div className="px-4 py-6 text-center text-xs text-muted-foreground">Loading current race standings…</div>
+                        <div className="px-4 py-8 text-center text-sm text-muted-foreground">Loading current race standings…</div>
                       ) : currentRaceError ? (
-                        <div className="px-4 py-6 text-center text-xs text-destructive">Failed to load race standings</div>
+                        <div className="px-4 py-8 text-center text-sm text-destructive">
+                          {currentRaceErrorObj instanceof Error ? currentRaceErrorObj.message : "Failed to load current race standings"}
+                        </div>
                       ) : (
                         <LeaderboardTable
                           rows={currentRaceLeaderboard}
@@ -431,109 +408,143 @@ const Leaderboard = () => {
                           onRowClick={(clickedUser) => handleSelectRow(clickedUser, activeRound)}
                         />
                       )
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Secondary B: Past Races with Dropdown */}
-                <Card className="border border-border/60 bg-background/50 backdrop-blur-sm shadow-md transition-all duration-300 hover:border-border">
-                  <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
-                    <div className="flex-1">
-                      <CardTitle className="text-sm font-semibold tracking-wide flex items-center gap-2">
-                        <History className="h-4 w-4 text-muted-foreground" />
-                        <span>Past Races</span>
-                      </CardTitle>
-                      <p className="mt-1 text-[0.65rem] text-muted-foreground leading-normal">
-                        Completed rounds. Select to view standings.
-                      </p>
-                    </div>
-                    <div className="w-24 sm:w-32">
-                      <select
-                        value={selectedRound ?? defaultRound}
-                        onChange={(e) => {
-                          const next = e.target.value || null;
-                          setSelectedRound(next);
-                        }}
-                        className="w-full rounded border border-border bg-background/80 px-2 py-1 text-[0.7rem] font-medium text-foreground outline-none focus:border-primary"
-                      >
-                        {history.length === 0 && (
-                          <option value="">No history</option>
-                        )}
-                        {history.map((h: LeaderboardHistoryEntry) => (
-                          <option key={h.round} value={h.round}>
-                            R{h.round} – {h.race_name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="p-0">
-                    {pastRaceLoading ? (
-                      <div className="px-4 py-6 text-center text-xs text-muted-foreground">Loading past race standings…</div>
-                    ) : pastRaceError ? (
-                      <div className="px-4 py-6 text-center text-xs text-destructive">Failed to load past standings</div>
                     ) : (
-                      <LeaderboardTable
-                        rows={pastRaceLeaderboard}
-                        username={username}
-                        emptyMessage="No past race standings recorded yet."
-                        onRowClick={(clickedUser) => handleSelectRow(clickedUser, roundToFetch)}
-                      />
+                      seasonLoading ? (
+                        <div className="px-4 py-8 text-center text-sm text-muted-foreground">Loading season standings…</div>
+                      ) : seasonError ? (
+                        <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                          Season standings are temporarily unavailable.
+                        </div>
+                      ) : (
+                        <LeaderboardTable
+                          rows={seasonLeaderboard}
+                          username={username}
+                          emptyMessage="No season standings recorded yet."
+                          onRowClick={(clickedUser) => handleSelectRow(clickedUser, activeRound)}
+                        />
+                      )
                     )}
                   </CardContent>
                 </Card>
-              </div>
-            </div>
 
-            {/* Right Section: Locked Team + User standing */}
-            <div className="order-1 space-y-4 lg:order-2">
-              <Card className="border-border/60 bg-background/60">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    Your position
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 text-sm text-muted-foreground">
-                  {profileLoading ? (
-                    <div className="space-y-2 animate-pulse py-2">
-                      <div className="h-4 bg-secondary/80 rounded w-1/3" />
-                      <div className="h-8 bg-secondary/80 rounded w-1/2" />
-                    </div>
-                  ) : !user ? (
-                    <>
-                      <p>Sign in to see your rank on season and race leaderboards.</p>
-                      <div className="rounded-lg border border-dashed border-border/80 bg-background/40 p-4 text-xs">
-                        <p className="mb-1 font-medium text-foreground">Not signed in</p>
-                        <p className="text-muted-foreground">
-                          Sign in and lock in your team to appear on the leaderboards.
+                {/* 2. Split Secondary Grid (Season/Current and Past) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  
+                  {/* Secondary A: Opposite of Primary */}
+                  <Card className="border border-border/60 bg-background/50 backdrop-blur-sm shadow-md transition-all duration-300 hover:border-border">
+                    <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
+                      <div>
+                        <CardTitle className="text-sm font-semibold tracking-wide flex items-center gap-2">
+                          {isWeekendActive ? (
+                            <>
+                              <Crown className="h-4 w-4 text-muted-foreground" />
+                              <span>Season Standings</span>
+                            </>
+                          ) : (
+                            <>
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              <span>Current Race: {activeRaceName || `Round ${activeRound}`}</span>
+                            </>
+                          )}
+                        </CardTitle>
+                        <p className="mt-1 text-[0.65rem] text-muted-foreground leading-normal">
+                          {isWeekendActive
+                            ? "Cumulative points from all closed race weekends."
+                            : "Qualifying starts soon. Standings update during active weekend."}
                         </p>
                       </div>
-                    </>
-                  ) : !username ? (
-                    <div className="rounded-lg border border-dashed border-border/80 bg-background/40 p-4 text-xs">
-                      <p className="mb-1 font-medium text-foreground">Set your username</p>
-                      <p className="text-muted-foreground">
-                        Add a username in Profile to lock in your team and appear here.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="rounded-lg border border-border/80 bg-background/40 p-3">
-                        <p className="mb-1 text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground">Season Standing</p>
-                        <p className="font-racing text-2xl text-gradient-gold">#{seasonRank ?? "–"}</p>
-                        <p className="text-xs text-muted-foreground">{seasonPoints ?? 0} pts</p>
+                      <Badge className="bg-secondary/80 text-muted-foreground border border-border text-[0.6rem] font-bold uppercase tracking-wider">
+                        {isWeekendActive ? "SEASON" : "RACE"}
+                      </Badge>
+                    </CardHeader>
+                    
+                    <CardContent className="p-0">
+                      {isWeekendActive ? (
+                        seasonLoading ? (
+                          <div className="px-4 py-6 text-center text-xs text-muted-foreground">Loading season standings…</div>
+                        ) : seasonError ? (
+                          <div className="px-4 py-6 text-center text-xs text-muted-foreground">Season standings unavailable.</div>
+                        ) : (
+                          <LeaderboardTable
+                            rows={seasonLeaderboard}
+                            username={username}
+                            emptyMessage="No season standings recorded yet."
+                            onRowClick={(clickedUser) => handleSelectRow(clickedUser, activeRound)}
+                          />
+                        )
+                      ) : (
+                        currentRaceLoading ? (
+                          <div className="px-4 py-6 text-center text-xs text-muted-foreground">Loading current race standings…</div>
+                        ) : currentRaceError ? (
+                          <div className="px-4 py-6 text-center text-xs text-destructive">Failed to load race standings</div>
+                        ) : (
+                          <LeaderboardTable
+                            rows={currentRaceLeaderboard}
+                            username={username}
+                            emptyMessage="No current race standings recorded yet."
+                            onRowClick={(clickedUser) => handleSelectRow(clickedUser, activeRound)}
+                          />
+                        )
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Secondary B: Past Races with Dropdown */}
+                  <Card className="border border-border/60 bg-background/50 backdrop-blur-sm shadow-md transition-all duration-300 hover:border-border">
+                    <CardHeader className="flex flex-row items-center justify-between gap-4 pb-3">
+                      <div className="flex-1">
+                        <CardTitle className="text-sm font-semibold tracking-wide flex items-center gap-2">
+                          <History className="h-4 w-4 text-muted-foreground" />
+                          <span>Past Races</span>
+                        </CardTitle>
+                        <p className="mt-1 text-[0.65rem] text-muted-foreground leading-normal">
+                          Completed rounds. Select to view standings.
+                        </p>
                       </div>
-                      <div className="rounded-lg border border-border/80 bg-background/40 p-3">
-                        <p className="mb-1 text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground">Current Race</p>
-                        <p className="font-racing text-2xl text-gradient-gold">#{currentRaceRank ?? "–"}</p>
-                        <p className="text-xs text-muted-foreground">{currentRacePoints ?? 0} pts</p>
+                      <div className="w-24 sm:w-32">
+                        <select
+                          value={selectedRound ?? defaultRound}
+                          onChange={(e) => {
+                            const next = e.target.value || null;
+                            setSelectedRound(next);
+                          }}
+                          className="w-full rounded border border-border bg-background/80 px-2 py-1 text-[0.7rem] font-medium text-foreground outline-none focus:border-primary"
+                        >
+                          {history.length === 0 && (
+                            <option value="">No history</option>
+                          )}
+                          {history.map((h: LeaderboardHistoryEntry) => (
+                            <option key={h.round} value={h.round}>
+                              R{h.round} – {h.race_name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    </CardHeader>
+
+                    <CardContent className="p-0">
+                      {pastRaceLoading ? (
+                        <div className="px-4 py-6 text-center text-xs text-muted-foreground">Loading past race standings…</div>
+                      ) : pastRaceError ? (
+                        <div className="px-4 py-6 text-center text-xs text-destructive">Failed to load past standings</div>
+                      ) : (
+                        <LeaderboardTable
+                          rows={pastRaceLeaderboard}
+                          username={username}
+                          emptyMessage="No past race standings recorded yet."
+                          onRowClick={(clickedUser) => handleSelectRow(clickedUser, roundToFetch)}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Right Section: Locked Team + User standing */}
+              <div className="space-y-4">
+                <div className="hidden lg:block">
+                  {renderYourPositionCard()}
+                </div>
 
               {/* Locked Roster / Team Details Card */}
               {user && (
@@ -767,7 +778,8 @@ const Leaderboard = () => {
               )}
             </div>
           </div>
-        )}
+        </>
+      )}
       </div>
     </div>
   );
