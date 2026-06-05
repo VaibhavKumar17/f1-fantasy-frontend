@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { supabase, checkUsernameAvailable, createProfile } from "@/lib/supabase";
+import { supabase, checkUsernameAvailable, createProfile, siteUrl } from "@/lib/supabase";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -41,16 +41,31 @@ const SignUp = () => {
       return;
     }
     setLoading(true);
+    const redirectTo = siteUrl ? `${siteUrl.replace(/\/$/, "")}/login` : undefined;
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
+      options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
     });
     if (error) {
       setLoading(false);
       const msg = error.message || "";
-      if (msg.toLowerCase().includes("rate limit") || (error as any).status === 429) {
+      const msgLower = msg.toLowerCase();
+      if (msgLower.includes("rate limit") || (error as { status?: number }).status === 429) {
         toast.warning(
           "We’ve sent too many emails in a short time. Please check your inbox (and spam) or try again in a few minutes."
+        );
+      } else if (
+        msgLower.includes("confirmation email") ||
+        msgLower.includes("confirmation mail") ||
+        msgLower.includes("email provider") ||
+        msgLower.includes("smtp") ||
+        msgLower.includes("failed to send") ||
+        msgLower.includes("verification") ||
+        msgLower.includes("unexpected_failure")
+      ) {
+        toast.error(
+          `Email failed: ${msg}. Tip: Turn off 'Confirm email' in Supabase Dashboard → Auth → Providers → Email to sign up instantly without verification!`
         );
       } else {
         toast.error(msg || "Sign up failed. Please try again.");
@@ -91,8 +106,8 @@ const SignUp = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-carbon pt-24">
-      <div className="mx-auto w-full max-w-md rounded-xl border border-border/70 bg-card/90 p-8 text-card-foreground shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-carbon px-3 pt-20 pb-8 sm:pt-24">
+      <div className="mx-auto w-full max-w-md rounded-xl border border-border/70 bg-card/90 p-4 text-card-foreground shadow-lg sm:p-8">
         <p className="mb-2 text-[0.6rem] font-medium uppercase tracking-[0.35em] text-muted-foreground">
           F1 DELHI NCR COMMUNITY FANTASY
         </p>

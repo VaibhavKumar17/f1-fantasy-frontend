@@ -60,6 +60,11 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Supabase auth (confirmation email & rate limits)
+
+- **Confirmation email redirect**: Set `VITE_SITE_URL` in `.env` to your production URL (e.g. `https://f1-fantasyclub.netlify.app` with no trailing slash). In [Supabase Dashboard](https://supabase.com/dashboard) go to **Authentication → URL Configuration** and set **Site URL** and **Redirect URLs** to include that URL so confirmation and password-reset links go to production, not localhost.
+- **Rate limits**: The "2 emails per hour" limit is configured in Supabase. In **Authentication → Rate Limits** you can adjust email (sign-up, recovery) limits. The app only displays a friendly message when a rate limit is hit.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.

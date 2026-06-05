@@ -34,11 +34,11 @@ export async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
   return res.json();
 }
 
-export async function fetchSeasonLeaderboard(): Promise<LeaderboardEntry[]> {
+export async function fetchSeasonLeaderboard(type: string = "combined"): Promise<LeaderboardEntry[]> {
   const base = getBaseUrl();
   if (!base) return [];
   try {
-    const res = await fetch(`${base}/leaderboard/season`);
+    const res = await fetch(`${base}/leaderboard/season?type=${encodeURIComponent(type)}`);
 
     // Fallback for backends that only expose /leaderboard
     if (res.status === 404) {
@@ -60,10 +60,10 @@ export async function fetchSeasonLeaderboard(): Promise<LeaderboardEntry[]> {
   }
 }
 
-export async function fetchRaceLeaderboard(roundId: string): Promise<LeaderboardEntry[]> {
+export async function fetchRaceLeaderboard(roundId: string, type: string = "combined"): Promise<LeaderboardEntry[]> {
   const base = getBaseUrl();
   if (!base) return [];
-  const res = await fetch(`${base}/leaderboard/race/${encodeURIComponent(roundId)}`);
+  const res = await fetch(`${base}/leaderboard/race/${encodeURIComponent(roundId)}?type=${encodeURIComponent(type)}`);
   if (!res.ok) throw new Error("Failed to load race leaderboard");
   return res.json();
 }
@@ -75,6 +75,30 @@ export async function fetchLeaderboardHistory(): Promise<LeaderboardHistoryEntry
   if (!base) return [];
   const res = await fetch(`${base}/leaderboard/history`);
   if (!res.ok) return [];
+  return res.json();
+}
+
+export type RoundTeam = {
+  username: string;
+  race_round: string;
+  drivers: string[];
+  constructors: (string | null)[];
+};
+
+export type RoundTeamsResponse = {
+  round: string;
+  locked: boolean;
+  teams: RoundTeam[];
+};
+
+export async function fetchRoundTeams(roundId: string, username?: string): Promise<RoundTeamsResponse> {
+  const base = getBaseUrl();
+  if (!base) return { round: roundId, locked: false, teams: [] };
+  const params = username ? `?username=${encodeURIComponent(username)}` : "";
+  const res = await fetch(`${base}/round-teams/${encodeURIComponent(roundId)}${params}`);
+  if (!res.ok) {
+    return { round: roundId, locked: false, teams: [] };
+  }
   return res.json();
 }
 

@@ -9,10 +9,20 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CountdownClock } from "@/components/CountdownClock";
 import { fetchDrivers, type Driver } from "@/data/drivers";
 import { getConstructors, CONSTRUCTOR_BUDGET, type Constructor } from "@/data/constructors";
-import { fetchSchedule, getNextLockCloseUtc, getLockInRaceRound } from "@/data/schedule";
+import { fetchSchedule, getNextLockCloseUtc, getNextUnlockUtc, isTeamLockedForWeekend, getLockInRaceRound } from "@/data/schedule";
 import { useAuth } from "@/contexts/AuthContext";
-import { createTeam, isApiConfigured } from "@/lib/api";
+import { createTeam, isApiConfigured, fetchRoundTeams } from "@/lib/api";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const BUDGET_CAP = 100;
 const MAX_DRIVERS = 5;
@@ -21,13 +31,14 @@ const MAX_CONSTRUCTORS = 2;
 const constructorsList = getConstructors();
 
 const MyTeam = () => {
-  const { user, username } = useAuth();
+  const { user, username, loading: authLoading } = useAuth();
   const [selectedDrivers, setSelectedDrivers] = useState<Driver[]>([]);
   const [selectedConstructors, setSelectedConstructors] = useState<Constructor[]>([]);
   const [filter, setFilter] = useState<string>("All");
   const [saving, setSaving] = useState(false);
   const [hasLockedOnce, setHasLockedOnce] = useState(false);
   const [editing, setEditing] = useState(true);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   const { data: drivers = [], isLoading } = useQuery<Driver[]>({
     queryKey: ["drivers"],
@@ -43,52 +54,96 @@ const MyTeam = () => {
     return () => clearInterval(t);
   }, []);
 
-  // Restore from localStorage only once on first load so clearing the team doesn’t re-fill from storage
-  useEffect(() => {
-    if (hasRestoredDrivers.current || selectedDrivers.length > 0) return;
-    hasRestoredDrivers.current = true;
-    try {
-      const raw = localStorage.getItem("f1-fantasy-team");
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Driver[];
-      if (!Array.isArray(parsed) || parsed.length === 0) return;
-      setSelectedDrivers(parsed);
-      if (parsed.length === MAX_DRIVERS) {
-        setHasLockedOnce(true);
-        setEditing(false);
-      }
-    } catch {
-      // ignore
-    }
-  }, [selectedDrivers.length]);
-
-  useEffect(() => {
-    if (hasRestoredConstructors.current || selectedConstructors.length > 0) return;
-    hasRestoredConstructors.current = true;
-    try {
-      const raw = localStorage.getItem("f1-fantasy-constructors");
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { id: string; name: string }[];
-      if (!Array.isArray(parsed) || parsed.length > MAX_CONSTRUCTORS) return;
-      const ids = new Set(constructorsList.map((c) => c.id));
-      const valid = parsed.filter((p) => p.id && ids.has(p.id));
-      if (valid.length === parsed.length) {
-        const next = valid.map((p) => constructorsList.find((c) => c.id === p.id)!).filter(Boolean);
-        if (next.length === valid.length) setSelectedConstructors(next);
-      }
-    } catch {
-      // ignore
-    }
-  }, [selectedConstructors.length]);
   const { data: scheduleData } = useQuery({
     queryKey: ["schedule"],
     queryFn: fetchSchedule,
   });
+  const races = scheduleData?.races ?? [];
+
+  const currentRound = useMemo(() => {
+    if (!races.length) return null;
+    return getLockInRaceRound(races);
+  }, [races]);
+
+  const { data: serverTeamData, isLoading: loadingServerTeam } = useQuery({
+    queryKey: ["roundTeams", currentRound ?? "", username ?? ""],
+    queryFn: () => fetchRoundTeams(currentRound!, username!),
+    enabled: isApiConfigured() && !!currentRound && !!username,
+  });
+
+  // Restore team from Server first, fallback to user-scoped localStorage
+  useEffect(() => {
+    if (authLoading || loadingServerTeam || drivers.length === 0) return;
+    if (!username) return;
+
+    // 1) Restore from server data if exists
+    const myTeam = serverTeamData?.teams?.find((t) => t.username === username);
+    if (myTeam) {
+      if (hasRestoredDrivers.current && hasRestoredConstructors.current) return;
+      const matchedDrivers = myTeam.drivers.map(id => drivers.find(d => d.id === id)).filter(Boolean) as Driver[];
+      const matchedConstructors = myTeam.constructors.map(id => constructorsList.find(c => c.id === id)).filter(Boolean) as Constructor[];
+      
+      if (matchedDrivers.length === MAX_DRIVERS && matchedConstructors.length === MAX_CONSTRUCTORS) {
+        setSelectedDrivers(matchedDrivers);
+        setSelectedConstructors(matchedConstructors);
+        setHasLockedOnce(true);
+        setEditing(false);
+        hasRestoredDrivers.current = true;
+        hasRestoredConstructors.current = true;
+        // Sync local storage
+        localStorage.setItem(`f1-fantasy-team-${username}`, JSON.stringify(matchedDrivers));
+        localStorage.setItem(`f1-fantasy-constructors-${username}`, JSON.stringify(matchedConstructors));
+        return;
+      }
+    }
+
+    // 2) Fallback: Restore from localStorage (if no server team found)
+    if (!hasRestoredDrivers.current && selectedDrivers.length === 0) {
+      hasRestoredDrivers.current = true;
+      try {
+        const key = `f1-fantasy-team-${username}`;
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw) as Driver[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setSelectedDrivers(parsed);
+            if (parsed.length === MAX_DRIVERS) {
+              setHasLockedOnce(true);
+              setEditing(false);
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!hasRestoredConstructors.current && selectedConstructors.length === 0) {
+      hasRestoredConstructors.current = true;
+      try {
+        const key = `f1-fantasy-constructors-${username}`;
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw) as { id: string; name: string }[];
+          const ids = new Set(constructorsList.map((c) => c.id));
+          const valid = parsed.filter((p) => p.id && ids.has(p.id));
+          if (valid.length === parsed.length) {
+            const next = valid.map((p) => constructorsList.find((c) => c.id === p.id)!).filter(Boolean);
+            if (next.length === valid.length) setSelectedConstructors(next);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [authLoading, loadingServerTeam, serverTeamData, username, drivers]);
+
   const nextLockClose = useMemo(
-    () => (scheduleData?.races ? getNextLockCloseUtc(scheduleData.races) : null),
-    [scheduleData]
+    () => (races.length ? getNextLockCloseUtc(races, now) : null),
+    [races, now]
   );
-  const lockClosed = nextLockClose !== null && now >= nextLockClose;
+  const nextUnlock = useMemo(() => (races.length ? getNextUnlockUtc(races, now) : null), [races, now]);
+  const lockClosed = useMemo(() => isTeamLockedForWeekend(races, now), [races, now]);
 
   const TEAM_ORDER = [
     "McLaren",
@@ -115,6 +170,29 @@ const MyTeam = () => {
 
   const filteredDrivers =
     filter === "All" ? drivers : drivers.filter((d) => d.team === filter);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-carbon pt-20 pb-safe sm:pt-24 flex items-center justify-center">
+        <div className="relative w-full max-w-xs p-6 bg-card/65 border border-primary/20 rounded-xl text-center shadow-[0_0_40px_rgba(225,6,0,0.18)] overflow-hidden">
+          {/* Neon racing red accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 to-orange-500 animate-pulse" />
+          
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-primary/20 bg-primary/5 shadow-[0_0_15px_rgba(225,6,0,0.1)]">
+            {/* Pulsing tachometer styled indicator */}
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+          
+          <p className="text-xs font-racing uppercase tracking-[0.25em] text-primary animate-pulse font-bold">
+            CHECKING GRID POSITION...
+          </p>
+          <div className="mt-4 w-full bg-secondary/50 h-1 rounded-full overflow-hidden">
+            <div className="bg-primary h-full w-1/3 rounded-full animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading && drivers.length === 0) {
     return (
@@ -225,8 +303,10 @@ const MyTeam = () => {
     const driverIds = selectedDrivers.map((d) => d.id);
     const constructorIds = selectedConstructors.map((c) => c.id);
     const raceRound = scheduleData?.races ? getLockInRaceRound(scheduleData.races) : undefined;
-    localStorage.setItem("f1-fantasy-team", JSON.stringify(selectedDrivers));
-    localStorage.setItem("f1-fantasy-constructors", JSON.stringify(selectedConstructors));
+    if (username) {
+      localStorage.setItem(`f1-fantasy-team-${username}`, JSON.stringify(selectedDrivers));
+      localStorage.setItem(`f1-fantasy-constructors-${username}`, JSON.stringify(selectedConstructors));
+    }
     if (isApiConfigured()) {
       setSaving(true);
       try {
@@ -259,14 +339,20 @@ const MyTeam = () => {
   };
 
   return (
-    <div className="min-h-screen bg-carbon pt-24">
-      <div className="container mx-auto px-4 pb-16">
+    <div className="min-h-screen bg-carbon pt-20 pb-safe sm:pt-24">
+      <div className="container mx-auto px-3 pb-12 sm:px-4 sm:pb-16">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="mb-2 font-racing text-3xl font-bold tracking-[0.2em] text-gradient-red sm:text-4xl">
             BUILD YOUR TEAM
           </h1>
           <p className="mb-4 max-w-2xl text-sm text-muted-foreground sm:text-base">
             First pick {MAX_DRIVERS} drivers (₹{BUDGET_CAP}M cap), then pick {MAX_CONSTRUCTORS} constructors (₹{CONSTRUCTOR_BUDGET}M cap). Lock in to save.
+          </p>
+          <p className="mb-4 text-xs text-muted-foreground sm:text-sm">
+            Need details on how points and locking work?{" "}
+            <Link to="/rules" className="font-medium text-primary underline-offset-4 hover:underline">
+              Read the full rules &amp; scoring.
+            </Link>
           </p>
           {nextLockClose && (
             <div className="mb-6 inline-block">
@@ -277,13 +363,13 @@ const MyTeam = () => {
             </div>
           )}
           {lockClosed && (
-            <div className="mb-6 flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">
+            <div className="mb-6 flex flex-col gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-sm text-amber-200 sm:flex-row sm:items-center">
               <Lock className="h-4 w-4 shrink-0" />
-              <span>Team locked for this weekend. You can edit again before the next Grand Prix qualifying (Q1).</span>
+              <span>Team locked for this weekend. You can edit again after the race finishes (leaderboard moves to next round then).</span>
             </div>
           )}
           {!lockClosed && hasLockedOnce && !editing && (
-            <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-100">
+            <div className="mb-6 flex flex-col gap-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-100 sm:flex-row sm:items-center sm:justify-between">
               <span>Your team is locked in for the next race. You can still modify it until Q1 starts.</span>
               <Button
                 variant="outline"
@@ -307,7 +393,7 @@ const MyTeam = () => {
                     YOUR LOCKED TEAM
                   </h2>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    This is your current team for the selected race. You can still modify it until Q1 starts.
+                    This is your current team for the selected race. You can modify it until Q1 starts; it stays locked until the race finishes.
                   </p>
                 </div>
                 <div className="grid gap-4 p-4 sm:grid-cols-2">
@@ -629,7 +715,7 @@ const MyTeam = () => {
                     </div>
                   )}
                   <Button
-                    onClick={saveTeam}
+                    onClick={() => setShowConfirmDialog(true)}
                     disabled={
                       lockClosed ||
                       selectedDrivers.length < MAX_DRIVERS ||
@@ -654,6 +740,35 @@ const MyTeam = () => {
           </div>
         </div>
       </div>
+      
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent className="border-border bg-card/95 backdrop-blur-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-racing text-xl font-bold tracking-[0.15em] text-gradient-red">
+              JOIN THE LEADERBOARD? 🏁
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-muted-foreground leading-relaxed mt-2">
+              Locking in your team will submit your roster to the global telemetry. Your username, chosen drivers, constructors, and cumulative points will be visible on the public leaderboard. 
+              <br /><br />
+              Do you give permission to publish your profile and compete in the league?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-4 gap-2">
+            <AlertDialogCancel className="font-racing tracking-[0.1em] border-border text-foreground hover:bg-secondary">
+              NO, CANCEL
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowConfirmDialog(false);
+                void saveTeam();
+              }}
+              className="font-racing tracking-[0.1em] bg-primary hover:bg-primary/90 text-white"
+            >
+              YES, PUBLISH TEAM
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

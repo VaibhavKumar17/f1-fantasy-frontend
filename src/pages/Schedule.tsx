@@ -18,8 +18,8 @@ const Schedule = () => {
   const season = data?.season ?? "";
 
   return (
-    <div className="min-h-screen bg-carbon pt-24">
-      <div className="container mx-auto px-4 pb-16">
+    <div className="min-h-screen bg-carbon pt-20 pb-safe sm:pt-24">
+      <div className="container mx-auto px-3 pb-12 sm:px-4 sm:pb-16">
         <header className="mb-8">
           <p className="mb-2 text-xs font-medium uppercase tracking-[0.35em] text-muted-foreground">
             {season ? `SEASON ${season}` : "CURRENT SEASON"}

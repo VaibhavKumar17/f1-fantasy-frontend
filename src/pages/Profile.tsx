@@ -9,20 +9,43 @@ import { useAuth } from "@/contexts/AuthContext";
 import { checkUsernameAvailable, createProfile } from "@/lib/supabase";
 
 const Profile = () => {
-  const { user, username } = useAuth();
+  const { user, username, profileLoading, loading: authLoading } = useAuth();
   const [newUsername, setNewUsername] = useState("");
   const [settingUsername, setSettingUsername] = useState(false);
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-carbon pt-20 pb-safe sm:pt-24 flex items-center justify-center">
+        <div className="relative w-full max-w-xs p-6 bg-card/65 border border-primary/20 rounded-xl text-center shadow-[0_0_40px_rgba(225,6,0,0.18)] overflow-hidden">
+          {/* Neon racing red accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 to-orange-500 animate-pulse" />
+          
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-primary/20 bg-primary/5 shadow-[0_0_15px_rgba(225,6,0,0.1)]">
+            {/* Pulsing tachometer styled indicator */}
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+          
+          <p className="text-xs font-racing uppercase tracking-[0.25em] text-primary animate-pulse font-bold">
+            LOADING TELEMETRY...
+          </p>
+          <div className="mt-4 w-full bg-secondary/50 h-1 rounded-full overflow-hidden">
+            <div className="bg-primary h-full w-1/3 rounded-full animate-pulse" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
-      <div className="min-h-screen bg-carbon pt-24">
-        <div className="container mx-auto px-4 pb-16 flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="min-h-screen bg-carbon pt-20 pb-safe sm:pt-24">
+        <div className="container mx-auto flex min-h-[60vh] flex-col items-center justify-center px-3 pb-12 sm:px-4 sm:pb-16">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-md text-center"
           >
-            <Card className="border border-border/70 bg-card/90 p-8">
+            <Card className="border border-border/70 bg-card/90 p-4 sm:p-8">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-secondary text-muted-foreground">
                 <User className="h-7 w-7" />
               </div>
@@ -46,8 +69,8 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-carbon pt-24">
-      <div className="container mx-auto px-4 pb-16">
+    <div className="min-h-screen bg-carbon pt-20 pb-safe sm:pt-24">
+      <div className="container mx-auto px-3 pb-12 sm:px-4 sm:pb-16">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -72,7 +95,12 @@ const Profile = () => {
                 <p className="text-sm text-muted-foreground">Email</p>
                 <p className="font-medium text-foreground">{user.email}</p>
               </div>
-              {username ? (
+              {profileLoading ? (
+                <div className="space-y-2 py-2">
+                  <div className="h-3 w-20 animate-pulse rounded bg-secondary-foreground/20" />
+                  <div className="h-5 w-40 animate-pulse rounded bg-secondary-foreground/10" />
+                </div>
+              ) : username ? (
                 <div>
                   <p className="text-sm text-muted-foreground">Username</p>
                   <p className="font-medium text-foreground">{username}</p>

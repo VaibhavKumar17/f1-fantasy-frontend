@@ -39,8 +39,8 @@ const Index = () => {
   const nextLockInLabel = nextLockClose ? formatLockInIst(nextLockClose) : "—";
 
   return (
-    <div className="min-h-screen bg-carbon pt-24">
-      <div className="container mx-auto px-4 pb-16">
+    <div className="min-h-screen bg-carbon pt-20 pb-safe sm:pt-24">
+      <div className="container mx-auto px-3 pb-12 sm:px-4 sm:pb-16">
         {/* Hero */}
         <section className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <div>
@@ -64,22 +64,22 @@ const Index = () => {
               leaderboard every race weekend.
             </p>
 
-            <div className="mb-8 flex flex-wrap items-center gap-4">
-              <Button size="lg" className="font-racing tracking-[0.2em]" asChild>
+            <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+              <Button size="lg" className="min-h-[44px] w-full font-racing tracking-[0.2em] sm:w-auto" asChild>
                 <Link to="/my-team">
-                  <Users className="mr-2 h-4 w-4" />
+                  <Users className="mr-2 h-4 w-4 shrink-0" />
                   CREATE YOUR TEAM
                 </Link>
               </Button>
               <Button
                 variant="ghost"
                 size="lg"
-                className="border border-border/60 bg-background/40 font-racing tracking-[0.2em]"
+                className="min-h-[44px] w-full border border-border/60 bg-background/40 font-racing tracking-[0.2em] sm:w-auto"
                 asChild
               >
                 <Link to="/leaderboard">
                   LEADERBOARD
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="ml-2 h-4 w-4 shrink-0" />
                 </Link>
               </Button>
             </div>

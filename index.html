@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>F1 Fantasy Delhi NCR — Build Your Dream Team</title>
     <meta name="description" content="Join the Delhi NCR F1 Fantasy community. Pick 5 drivers, compete every race weekend, and climb the leaderboard." />
@@ -18,8 +18,18 @@
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
   </head>
 
-  <body>
-    <div id="root"></div>
+  <body style="margin:0;min-height:100vh;background:#0f0f0f;color:#e5e5e5;font-family:sans-serif">
+    <noscript>
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;text-align:center">
+        <p>F1 Fantasy Delhi NCR — JavaScript is required.</p>
+      </div>
+    </noscript>
+    <div id="root" style="min-height:100vh">
+      <div style="padding:2rem;text-align:center">
+        <p style="font-size:1rem;margin:0">F1 Fantasy Delhi NCR</p>
+        <p style="font-size:0.875rem;color:#888;margin:0.5rem 0 0">Loading…</p>
+      </div>
+    </div>
     <script>
       // Catch Supabase/IndexedDB "steal" lock error so it doesn't break the app (don't patch console)
       window.addEventListener("unhandledrejection", function(e) {

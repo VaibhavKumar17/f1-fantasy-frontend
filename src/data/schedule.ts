@@ -157,6 +157,27 @@ export function getNextLockCloseUtc(races: Race[], now: Date = new Date()): Date
   return null;
 }
 
+/** Next race (main event) start in UTC – team unlocks after this time. Pass `now` for reactive updates. */
+export function getNextRaceStartUtc(races: Race[], now: Date = new Date()): Date | null {
+  for (const r of races) {
+    if (!r.dateTimeUtc) continue;
+    const raceStart = new Date(r.dateTimeUtc);
+    if (raceStart > now) return raceStart;
+  }
+  return null;
+}
+
+/** True when we're in the lock window: after this weekend's Q1 but before this weekend's race. Team stays locked until race finish. */
+export function isTeamLockedForWeekend(races: Race[], now: Date = new Date()): boolean {
+  for (const r of races) {
+    if (!r.qualifyingDateUtc || !r.dateTimeUtc) continue;
+    const q = new Date(r.qualifyingDateUtc);
+    const race = new Date(r.dateTimeUtc);
+    if (q <= now && now < race) return true;
+  }
+  return false;
+}
+
 /** Next race weekend (first race whose Q1 is still in the future). Pass `now` for reactive updates. */
 export function getNextRace(races: Race[], now: Date = new Date()): Race | null {
   for (const r of races) {
@@ -186,7 +207,7 @@ export function getLockInRaceRound(races: Race[]): string | undefined {
   return races[races.length - 1].round ?? races[0].round;
 }
 
-/** Next race weekend unlock (next qualifying open for editing) – first qualifying in the future */
+/** Next unlock time: first race start in the future. Team unlocks after this race (so editing opens for the next round). */
 export function getNextUnlockUtc(races: Race[], now: Date = new Date()): Date | null {
-  return getNextLockCloseUtc(races, now);
+  return getNextRaceStartUtc(races, now);
 }

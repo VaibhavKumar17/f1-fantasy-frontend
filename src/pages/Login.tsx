@@ -2,13 +2,15 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { Checkbox } from "@/components/ui/checkbox";
+import { supabase, siteUrl } from "@/lib/supabase";
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [keepLoggedIn, setKeepLoggedIn] = useState(true);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotSent, setForgotSent] = useState(false);
@@ -20,15 +22,26 @@ const Login = () => {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    if (data?.user) {
-      toast.success("Signed in.");
-      navigate("/", { replace: true });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      if (data?.user) {
+        try {
+          localStorage.setItem("keep_logged_in", keepLoggedIn ? "true" : "false");
+        } catch (storageError) {
+          console.warn("Storage not available:", storageError);
+        }
+        toast.success("Signed in.");
+        navigate("/", { replace: true });
+      }
+    } catch (err: any) {
+      console.error("Login exception:", err);
+      toast.error(err?.message || "An unexpected network or configuration error occurred.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,14 +53,25 @@ const Login = () => {
       return;
     }
     setLoading(true);
-    const redirectTo = `${window.location.origin}/reset-password`;
+    const redirectTo = `${(siteUrl || window.location.origin).replace(/\/$/, "")}/reset-password`;
     const { error } = await supabase.auth.resetPasswordForEmail(emailToUse, { redirectTo });
     setLoading(false);
     if (error) {
       const msg = error.message || "";
-      if (msg.toLowerCase().includes("rate limit") || error.status === 429) {
+      const msgLower = msg.toLowerCase();
+      if (msgLower.includes("rate limit") || error.status === 429) {
         toast.warning(
-          "We just sent you an email. Please check your inbox (and spam) before requesting another link."
+          "Email limit hit. Please try again in a few minutes, or configure a custom SMTP provider in your Supabase Dashboard."
+        );
+      } else if (
+        msgLower.includes("smtp") ||
+        msgLower.includes("failed to send") ||
+        msgLower.includes("email provider") ||
+        msgLower.includes("unexpected_failure") ||
+        msgLower.includes("error sending")
+      ) {
+        toast.error(
+          `Email failed: ${msg}. Tip: Set up a custom SMTP provider (e.g. Resend or SendGrid) in Supabase Dashboard → Project Settings → Auth to bypass default rate limits!`
         );
       } else {
         toast.error(msg || "Could not send reset email. Please try again in a minute.");
@@ -66,9 +90,9 @@ const Login = () => {
 
   if (forgotMode) {
     return (
-      <div className="login-bg-sharp relative flex min-h-screen items-center justify-center pt-24" style={loginBg}>
+      <div className="login-bg-sharp relative flex min-h-screen items-center justify-center px-3 pt-20 pb-8 sm:pt-24" style={loginBg}>
         <div className="absolute inset-0 bg-black/60" aria-hidden />
-        <div className="relative z-10 mx-auto w-full max-w-md rounded-xl border border-border/70 bg-card/90 p-8 text-card-foreground shadow-lg">
+        <div className="relative z-10 mx-auto w-full max-w-md rounded-xl border border-border/70 bg-card/90 p-4 text-card-foreground shadow-lg sm:p-8">
           <p className="mb-2 text-[0.6rem] font-medium uppercase tracking-[0.35em] text-muted-foreground">
             F1 DELHI NCR COMMUNITY FANTASY
           </p>
@@ -126,9 +150,9 @@ const Login = () => {
   }
 
   return (
-    <div className="login-bg-sharp relative flex min-h-screen items-center justify-center pt-24" style={loginBg}>
+    <div className="login-bg-sharp relative flex min-h-screen items-center justify-center px-3 pt-20 pb-8 sm:pt-24" style={loginBg}>
       <div className="absolute inset-0 bg-black/60" aria-hidden />
-      <div className="relative z-10 mx-auto w-full max-w-md rounded-xl border border-border/70 bg-card/90 p-8 text-card-foreground shadow-lg">
+      <div className="relative z-10 mx-auto w-full max-w-md rounded-xl border border-border/70 bg-card/90 p-4 text-card-foreground shadow-lg sm:p-8">
         <p className="mb-2 text-[0.6rem] font-medium uppercase tracking-[0.35em] text-muted-foreground">
           F1 DELHI NCR COMMUNITY FANTASY
         </p>
@@ -167,16 +191,32 @@ const Login = () => {
             />
           </div>
 
+          <div className="flex items-center justify-between py-1">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="keep-logged-in"
+                checked={keepLoggedIn}
+                onCheckedChange={(checked) => setKeepLoggedIn(!!checked)}
+              />
+              <label
+                htmlFor="keep-logged-in"
+                className="text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground cursor-pointer select-none hover:text-foreground"
+              >
+                Keep me logged in
+              </label>
+            </div>
+            <button
+              type="button"
+              className="text-xs font-medium uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground"
+              onClick={() => setForgotMode(true)}
+            >
+              Forgot password?
+            </button>
+          </div>
+
           <Button type="submit" className="mt-4 w-full font-racing tracking-[0.2em]" disabled={loading}>
             {loading ? "Signing in…" : "CONTINUE"}
           </Button>
-          <button
-            type="button"
-            className="mt-2 w-full text-center text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground hover:text-foreground"
-            onClick={() => setForgotMode(true)}
-          >
-            Forgot password?
-          </button>
           <p className="mt-4 text-center text-xs text-muted-foreground">
             Don't have an account?{" "}
             <Link to="/signup" className="font-medium uppercase tracking-[0.18em] text-primary hover:underline">
