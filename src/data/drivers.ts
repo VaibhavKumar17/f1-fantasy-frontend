@@ -25,6 +25,7 @@ export const drivers: Driver[] = [
     number: 4,
     price: 28,
     teamColor: "#FF8700",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/mclaren/lannor01/2026mclarenlannor01right.webp",
   },
   {
     id: "piastri",
@@ -35,6 +36,7 @@ export const drivers: Driver[] = [
     number: 81,
     price: 24,
     teamColor: "#FF8700",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/mclaren/oscpia01/2026mclarenoscpia01right.webp",
   },
   {
     id: "russell",
@@ -45,6 +47,7 @@ export const drivers: Driver[] = [
     number: 63,
     price: 22,
     teamColor: "#00D2BE",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/mercedes/georus01/2026mercedesgeorus01right.webp",
   },
   {
     id: "antonelli",
@@ -55,6 +58,7 @@ export const drivers: Driver[] = [
     number: 12,
     price: 16,
     teamColor: "#00D2BE",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/mercedes/andant01/2026mercedesandant01right.webp",
   },
   {
     id: "max_verstappen",
@@ -65,6 +69,7 @@ export const drivers: Driver[] = [
     number: 1,
     price: 30,
     teamColor: "#0600EF",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/redbullracing/maxver01/2026redbullracingmaxver01right.webp",
   },
   {
     id: "hadjar",
@@ -75,6 +80,7 @@ export const drivers: Driver[] = [
     number: 6,
     price: 12,
     teamColor: "#0600EF",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/redbullracing/isahad01/2026redbullracingisahad01right.webp",
   },
   {
     id: "leclerc",
@@ -85,6 +91,7 @@ export const drivers: Driver[] = [
     number: 16,
     price: 26,
     teamColor: "#DC0000",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/ferrari/chalec01/2026ferrarichalec01right.webp",
   },
   {
     id: "hamilton",
@@ -95,6 +102,7 @@ export const drivers: Driver[] = [
     number: 44,
     price: 25,
     teamColor: "#DC0000",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/ferrari/lewham01/2026ferrarilewham01right.webp",
   },
   {
     id: "albon",
@@ -105,6 +113,7 @@ export const drivers: Driver[] = [
     number: 23,
     price: 14,
     teamColor: "#005AFF",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/williams/alealb01/2026williamsalealb01right.webp",
   },
   {
     id: "sainz",
@@ -115,6 +124,7 @@ export const drivers: Driver[] = [
     number: 55,
     price: 18,
     teamColor: "#005AFF",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/williams/carsai01/2026williamscarsai01right.webp",
   },
   {
     id: "lawson",
@@ -125,6 +135,7 @@ export const drivers: Driver[] = [
     number: 30,
     price: 12,
     teamColor: "#1432FF",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/racingbulls/lialaw01/2026racingbullslialaw01right.webp",
   },
   {
     id: "arvid_lindblad",
@@ -132,9 +143,10 @@ export const drivers: Driver[] = [
     team: "Racing Bulls",
     nationality: "British",
     flag: "🇬🇧",
-    number: 27,
+    number: 41,
     price: 8,
     teamColor: "#1432FF",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/racingbulls/arvlin01/2026racingbullsarvlin01right.webp",
   },
   {
     id: "alonso",
@@ -145,6 +157,7 @@ export const drivers: Driver[] = [
     number: 14,
     price: 16,
     teamColor: "#006F62",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/astonmartin/feralo01/2026astonmartinferalo01right.webp",
   },
   {
     id: "stroll",
@@ -155,6 +168,7 @@ export const drivers: Driver[] = [
     number: 18,
     price: 10,
     teamColor: "#006F62",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/astonmartin/lanstr01/2026astonmartinlanstr01right.webp",
   },
   {
     id: "ocon",
@@ -165,6 +179,7 @@ export const drivers: Driver[] = [
     number: 31,
     price: 10,
     teamColor: "#B6BABD",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/haas/estoco01/2026haasestoco01right.webp",
   },
   {
     id: "bearman",
@@ -175,6 +190,7 @@ export const drivers: Driver[] = [
     number: 87,
     price: 10,
     teamColor: "#B6BABD",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/haas/olibea01/2026haasolibea01right.webp",
   },
   {
     id: "hulkenberg",
@@ -184,7 +200,8 @@ export const drivers: Driver[] = [
     flag: "🇩🇪",
     number: 27,
     price: 12,
-    teamColor: "#00E701",
+    teamColor: "#A3A3A3",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/audi/nichul01/2026audinichul01right.webp",
   },
   {
     id: "bortoleto",
@@ -194,7 +211,8 @@ export const drivers: Driver[] = [
     flag: "🇧🇷",
     number: 5,
     price: 8,
-    teamColor: "#00E701",
+    teamColor: "#A3A3A3",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/audi/gabbor01/2026audigabbor01right.webp",
   },
   {
     id: "gasly",
@@ -205,6 +223,7 @@ export const drivers: Driver[] = [
     number: 10,
     price: 12,
     teamColor: "#0090FF",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/alpine/piegas01/2026alpinepiegas01right.webp",
   },
   {
     id: "colapinto",
@@ -215,6 +234,7 @@ export const drivers: Driver[] = [
     number: 43,
     price: 8,
     teamColor: "#0090FF",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/alpine/fracol01/2026alpinefracol01right.webp",
   },
   {
     id: "bottas",
@@ -224,7 +244,8 @@ export const drivers: Driver[] = [
     flag: "🇫🇮",
     number: 77,
     price: 10,
-    teamColor: "#0033A0",
+    teamColor: "#1E1E24",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/cadillac/valbot01/2026cadillacvalbot01right.webp",
   },
   {
     id: "perez",
@@ -234,7 +255,8 @@ export const drivers: Driver[] = [
     flag: "🇲🇽",
     number: 11,
     price: 10,
-    teamColor: "#0033A0",
+    teamColor: "#1E1E24",
+    photoUrl: "https://media.formula1.com/image/upload/c_lfill,w_256/q_auto/v1740000001/common/f1/2026/cadillac/serper01/2026cadillacserper01right.webp",
   },
 ];
 

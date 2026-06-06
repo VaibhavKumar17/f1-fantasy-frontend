@@ -65,7 +65,7 @@ const SignUp = () => {
         msgLower.includes("unexpected_failure")
       ) {
         toast.error(
-          `Email failed: ${msg}. Tip: Turn off 'Confirm email' in Supabase Dashboard → Auth → Providers → Email to sign up instantly without verification!`
+          "We could not send the confirmation email. Please check that your email address is correct, or try again later."
         );
       } else {
         toast.error(msg || "Sign up failed. Please try again.");

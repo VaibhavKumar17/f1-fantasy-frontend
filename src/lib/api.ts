@@ -53,7 +53,7 @@ export async function fetchSeasonLeaderboard(type: string = "combined"): Promise
   } catch (err) {
     if (err instanceof TypeError && err.message === "Failed to fetch") {
       throw new Error(
-        "Failed to fetch season leaderboard. Check that the backend is running and VITE_API_URL is correct.",
+        "We could not reach the leaderboard server. Please check your internet connection or try again later.",
       );
     }
     throw err instanceof Error ? err : new Error("Failed to load season leaderboard");
@@ -120,7 +120,7 @@ export async function createTeam(
   raceRound?: string
 ): Promise<CreateTeamResponse> {
   const base = getBaseUrl();
-  if (!base) throw new Error("Backend URL not configured (VITE_API_URL)");
+  if (!base) throw new Error("Server URL is not configured. Please try again later.");
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   let res: Response;
@@ -142,7 +142,7 @@ export async function createTeam(
       err instanceof Error && err.name === "AbortError"
         ? "Request timed out. Backend may be slow or stuck — try again."
         : err instanceof TypeError && err.message === "Failed to fetch"
-          ? "Could not reach the backend. Is it running? Check VITE_API_URL (e.g. http://localhost:8000)."
+          ? "Could not reach the server. Please check your internet connection and try again."
           : err instanceof Error ? err.message : "Network error";
     throw new Error(message);
   }

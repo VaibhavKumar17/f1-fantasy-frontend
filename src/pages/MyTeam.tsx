@@ -1,11 +1,14 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, X, Check, AlertTriangle, LogIn, Trophy, Lock } from "lucide-react";
+import { Users, X, Check, AlertTriangle, LogIn, Trophy, Lock, Info } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DriverAvatar, ConstructorLivery } from "@/components/F1Assets";
+import DriverDetailsModal from "@/components/DriverDetailsModal";
+import DriverHoverPreview from "@/components/DriverHoverPreview";
+import ConstructorHoverPreview from "@/components/ConstructorHoverPreview";
 import { CountdownClock } from "@/components/CountdownClock";
 import { fetchDrivers, type Driver } from "@/data/drivers";
 import { getConstructors, CONSTRUCTOR_BUDGET, type Constructor } from "@/data/constructors";
@@ -39,6 +42,105 @@ const MyTeam = () => {
   const [hasLockedOnce, setHasLockedOnce] = useState(false);
   const [editing, setEditing] = useState(true);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [selectedDetailDriver, setSelectedDetailDriver] = useState<Driver | null>(null);
+  const [hoveredDriver, setHoveredDriver] = useState<Driver | null>(null);
+  const [hoveredConstructor, setHoveredConstructor] = useState<Constructor | null>(null);
+  const enterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnterDriver = (driver: Driver) => {
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+    if (enterTimeoutRef.current) {
+      clearTimeout(enterTimeoutRef.current);
+      enterTimeoutRef.current = null;
+    }
+
+    if (hoveredDriver?.id === driver.id) return;
+
+    // Hover starts in 200ms for responsiveness
+    const delay = 200;
+    
+    enterTimeoutRef.current = setTimeout(() => {
+      setHoveredConstructor(null);
+      setHoveredDriver(driver);
+    }, delay);
+  };
+
+  const handleMouseLeaveDriver = () => {
+    if (enterTimeoutRef.current) {
+      clearTimeout(enterTimeoutRef.current);
+      enterTimeoutRef.current = null;
+    }
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+
+    // 300ms delay on leaving (transition window to move mouse onto centered card)
+    leaveTimeoutRef.current = setTimeout(() => {
+      setHoveredDriver(null);
+    }, 300);
+  };
+
+  const handleMouseEnterConstructor = (constructor: Constructor) => {
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+    if (enterTimeoutRef.current) {
+      clearTimeout(enterTimeoutRef.current);
+      enterTimeoutRef.current = null;
+    }
+
+    if (hoveredConstructor?.id === constructor.id) return;
+
+    // Hover starts in 200ms for responsiveness
+    const delay = 200;
+    
+    enterTimeoutRef.current = setTimeout(() => {
+      setHoveredDriver(null);
+      setHoveredConstructor(constructor);
+    }, delay);
+  };
+
+  const handleMouseLeaveConstructor = () => {
+    if (enterTimeoutRef.current) {
+      clearTimeout(enterTimeoutRef.current);
+      enterTimeoutRef.current = null;
+    }
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+
+    // 300ms delay on leaving (transition window to move mouse onto centered card)
+    leaveTimeoutRef.current = setTimeout(() => {
+      setHoveredConstructor(null);
+    }, 300);
+  };
+
+  const clearHover = () => {
+    if (enterTimeoutRef.current) {
+      clearTimeout(enterTimeoutRef.current);
+      enterTimeoutRef.current = null;
+    }
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+    setHoveredDriver(null);
+    setHoveredConstructor(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (enterTimeoutRef.current) clearTimeout(enterTimeoutRef.current);
+      if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
+    };
+  }, []);
 
   const { data: drivers = [], isLoading } = useQuery<Driver[]>({
     queryKey: ["drivers"],
@@ -268,6 +370,7 @@ const MyTeam = () => {
 
   const toggleConstructor = (c: Constructor) => {
     if (lockClosed || !editing) return;
+    clearHover();
     if (selectedConstructors.some((x) => x.id === c.id)) {
       setSelectedConstructors((prev) => prev.filter((x) => x.id !== c.id));
       return;
@@ -426,7 +529,12 @@ const MyTeam = () => {
                     ) : (
                       <ul className="space-y-1.5 text-sm">
                         {selectedConstructors.map((c) => (
-                          <li key={c.id} className="flex items-center justify-between">
+                          <li 
+                            key={c.id} 
+                            onMouseEnter={() => handleMouseEnterConstructor(c)}
+                            onMouseLeave={handleMouseLeaveConstructor}
+                            className="flex items-center justify-between cursor-pointer hover:text-primary transition-colors"
+                          >
                             <span>{c.name}</span>
                             <span className="text-xs text-muted-foreground">₹{c.price}M</span>
                           </li>
@@ -482,7 +590,14 @@ const MyTeam = () => {
                         whileTap={{ scale: 0.98 }}
                       >
                         <Card
-                          onClick={() => editing && !lockClosed && !tooExpensive && !teamFull && toggleDriver(driver)}
+                          onClick={() => {
+                            if (editing && !lockClosed && !tooExpensive && !teamFull) {
+                              toggleDriver(driver);
+                            }
+                            clearHover();
+                          }}
+                          onMouseEnter={() => handleMouseEnterDriver(driver)}
+                          onMouseLeave={handleMouseLeaveDriver}
                           className={`relative overflow-hidden p-4 transition-all ${
                             lockClosed || !editing ? "cursor-not-allowed opacity-70" : "cursor-pointer"
                           } ${
@@ -500,22 +615,33 @@ const MyTeam = () => {
                           />
 
                           <div className="flex items-center gap-3 pl-3">
-                            <Avatar className="h-10 w-10 bg-secondary">
-                              {driver.photoUrl && (
-                                <AvatarImage src={driver.photoUrl} alt={driver.name} />
-                              )}
-                              <AvatarFallback className="font-racing text-lg font-bold text-foreground">
-                                {driver.number || driver.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")
-                                  .slice(0, 2)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <div
+                              className="cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedDetailDriver(driver);
+                                clearHover();
+                              }}
+                              title="Click to view driver stats & video"
+                            >
+                              <DriverAvatar driver={driver} className="h-10 w-10 shrink-0" />
+                            </div>
                             <div className="flex-1">
-                              <p className="font-medium text-foreground">
+                              <p className="font-medium text-foreground flex items-center flex-wrap">
                                 <span className="mr-1">{driver.flag}</span>
                                 {driver.name}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedDetailDriver(driver);
+                                    clearHover();
+                                  }}
+                                  className="p-1 hover:bg-neutral-800 rounded-full text-muted-foreground hover:text-foreground transition-all ml-1.5"
+                                  title="View driver details"
+                                >
+                                  <Info className="h-3.5 w-3.5" />
+                                </button>
                               </p>
                               <p className="text-xs text-muted-foreground">{driver.team}</p>
                             </div>
@@ -557,16 +683,20 @@ const MyTeam = () => {
                             key={c.id}
                             type="button"
                             onClick={() => editing && !overBudget && !full && toggleConstructor(c)}
+                            onMouseEnter={() => editing && handleMouseEnterConstructor(c)}
+                            onMouseLeave={handleMouseLeaveConstructor}
                             disabled={lockClosed || !editing || overBudget || full}
-                            className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
+                            className={`rounded-lg border p-2 flex flex-col items-center justify-between text-xs font-medium transition-all w-[100px] h-[100px] ${
                               selected
-                                ? "border-primary bg-primary/15 text-primary"
+                                ? "border-primary bg-primary/15 text-primary glow-red"
                                 : "border-border bg-background/60 text-muted-foreground hover:border-primary/50 hover:text-foreground"
                             } ${overBudget || full ? "opacity-50 cursor-not-allowed" : ""}`}
                           >
-                            {selected && <Check className="inline h-3 w-3 mr-1" />}
-                            {c.name}
-                            <span className="ml-1.5 text-[0.65rem] opacity-80">₹{c.price}M</span>
+                            <div className="flex flex-col items-center gap-1.5 w-full">
+                              <ConstructorLivery constructor={c} className="h-6 w-auto object-contain" />
+                              <span className="font-bold uppercase tracking-wider text-[0.6rem] truncate w-full text-center">{c.name}</span>
+                            </div>
+                            <span className="text-[0.55rem] opacity-80">₹{c.price}M</span>
                           </button>
                         );
                       })}
@@ -629,13 +759,19 @@ const MyTeam = () => {
                       {selectedConstructors.map((c) => (
                         <span
                           key={c.id}
-                          className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-foreground"
+                          onMouseEnter={() => handleMouseEnterConstructor(c)}
+                          onMouseLeave={handleMouseLeaveConstructor}
+                          className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-foreground cursor-pointer hover:bg-primary/20 transition-all"
                         >
                           {c.name} <span className="opacity-70">₹{c.price}M</span>
                           {!lockClosed && editing && (
                             <button
                               type="button"
-                              onClick={() => setSelectedConstructors((p) => p.filter((x) => x.id !== c.id))}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedConstructors((p) => p.filter((x) => x.id !== c.id));
+                                clearHover();
+                              }}
                               className="rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive"
                             >
                               <X className="h-3 w-3" />
@@ -668,7 +804,16 @@ const MyTeam = () => {
                             className="h-6 w-1 rounded-full"
                             style={{ backgroundColor: driver.teamColor }}
                           />
-                          <span className="text-sm font-medium text-foreground">
+                          <span 
+                            className="text-sm font-medium text-foreground cursor-pointer hover:underline"
+                            onClick={() => {
+                             setSelectedDetailDriver(driver);
+                             clearHover();
+                           }}
+                             onMouseEnter={() => handleMouseEnterDriver(driver)}
+                             onMouseLeave={handleMouseLeaveDriver}
+                            title="Click to view driver details"
+                          >
                             {driver.name}
                           </span>
                         </div>
@@ -811,6 +956,37 @@ const MyTeam = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {selectedDetailDriver && (
+        <DriverDetailsModal
+          driver={selectedDetailDriver}
+          onClose={() => setSelectedDetailDriver(null)}
+        />
+      )}
+
+      <DriverHoverPreview 
+        driver={hoveredDriver} 
+        onMouseEnter={() => {
+          if (leaveTimeoutRef.current) {
+            clearTimeout(leaveTimeoutRef.current);
+            leaveTimeoutRef.current = null;
+          }
+        }}
+        onMouseLeave={handleMouseLeaveDriver}
+        onClose={clearHover}
+      />
+
+      <ConstructorHoverPreview 
+        constructor={hoveredConstructor} 
+        onMouseEnter={() => {
+          if (leaveTimeoutRef.current) {
+            clearTimeout(leaveTimeoutRef.current);
+            leaveTimeoutRef.current = null;
+          }
+        }}
+        onMouseLeave={handleMouseLeaveConstructor}
+        onClose={clearHover}
+      />
     </div>
   );
 };

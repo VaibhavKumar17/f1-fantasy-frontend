@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Trophy, Crown, Users, Calendar, History, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -17,8 +17,12 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchSchedule } from "@/data/schedule";
-import { drivers as staticDrivers } from "@/data/drivers";
-import { constructors as staticConstructors } from "@/data/constructors";
+import { DriverAvatar, ConstructorLivery } from "@/components/F1Assets";
+import { drivers as staticDrivers, type Driver } from "@/data/drivers";
+import { constructors as staticConstructors, type Constructor } from "@/data/constructors";
+import DriverDetailsModal from "@/components/DriverDetailsModal";
+import DriverHoverPreview from "@/components/DriverHoverPreview";
+import ConstructorHoverPreview from "@/components/ConstructorHoverPreview";
 
 const getDriverDetails = (id: string) => {
   const normalizedId = id.trim().toLowerCase();
@@ -96,6 +100,107 @@ const Leaderboard = () => {
   const [selectedRound, setSelectedRound] = useState<string | null>(null);
   const [selectedUserTeam, setSelectedUserTeam] = useState<string | null>(null);
   const [inspectedRound, setInspectedRound] = useState<string | null>(null);
+  const [legendTab, setLegendTab] = useState<"drivers" | "constructors">("drivers");
+  const [selectedDetailDriver, setSelectedDetailDriver] = useState<Driver | null>(null);
+  const [hoveredDriver, setHoveredDriver] = useState<Driver | null>(null);
+  const [hoveredConstructor, setHoveredConstructor] = useState<Constructor | null>(null);
+  const enterTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnterDriver = (driver: Driver) => {
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+    if (enterTimeoutRef.current) {
+      clearTimeout(enterTimeoutRef.current);
+      enterTimeoutRef.current = null;
+    }
+
+    if (hoveredDriver?.id === driver.id) return;
+
+    // Hover starts in 200ms for responsiveness
+    const delay = 200;
+    
+    enterTimeoutRef.current = setTimeout(() => {
+      setHoveredConstructor(null);
+      setHoveredDriver(driver);
+    }, delay);
+  };
+
+  const handleMouseLeaveDriver = () => {
+    // Clear any pending enter timeout
+    if (enterTimeoutRef.current) {
+      clearTimeout(enterTimeoutRef.current);
+      enterTimeoutRef.current = null;
+    }
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+
+    // 300ms delay on leaving (transition window to move mouse onto centered card)
+    leaveTimeoutRef.current = setTimeout(() => {
+      setHoveredDriver(null);
+    }, 300);
+  };
+
+  const handleMouseEnterConstructor = (constructor: Constructor) => {
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+    if (enterTimeoutRef.current) {
+      clearTimeout(enterTimeoutRef.current);
+      enterTimeoutRef.current = null;
+    }
+
+    if (hoveredConstructor?.id === constructor.id) return;
+
+    // Hover starts in 200ms for responsiveness
+    const delay = 200;
+    
+    enterTimeoutRef.current = setTimeout(() => {
+      setHoveredDriver(null);
+      setHoveredConstructor(constructor);
+    }, delay);
+  };
+
+  const handleMouseLeaveConstructor = () => {
+    if (enterTimeoutRef.current) {
+      clearTimeout(enterTimeoutRef.current);
+      enterTimeoutRef.current = null;
+    }
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+
+    // 300ms delay on leaving (transition window to move mouse onto centered card)
+    leaveTimeoutRef.current = setTimeout(() => {
+      setHoveredConstructor(null);
+    }, 300);
+  };
+
+  const clearHover = () => {
+    if (enterTimeoutRef.current) {
+      clearTimeout(enterTimeoutRef.current);
+      enterTimeoutRef.current = null;
+    }
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current);
+      leaveTimeoutRef.current = null;
+    }
+    setHoveredDriver(null);
+    setHoveredConstructor(null);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (enterTimeoutRef.current) clearTimeout(enterTimeoutRef.current);
+      if (leaveTimeoutRef.current) clearTimeout(leaveTimeoutRef.current);
+    };
+  }, []);
 
   const { data: scheduleData } = useQuery({ queryKey: ["schedule"], queryFn: fetchSchedule });
   const races = scheduleData?.races ?? [];
@@ -341,9 +446,12 @@ const Leaderboard = () => {
         </header>
 
         {!isApiConfigured() && (
-          <Card className="border-border/60 bg-background/60 p-6">
-            <p className="text-sm text-muted-foreground">
-              Set VITE_API_URL in .env and start the backend to see season and race leaderboards.
+          <Card className="border-border/60 bg-background/60 p-6 text-center border-l-4 border-l-primary shadow-lg">
+            <p className="text-sm text-muted-foreground font-racing uppercase tracking-wider mb-2">
+              📡 Telemetry Offline
+            </p>
+            <p className="text-xs text-muted-foreground/80">
+              The live telemetry feed is currently offline for maintenance. Please check back in a few minutes.
             </p>
           </Card>
         )}
@@ -702,23 +810,58 @@ const Leaderboard = () => {
                             </div>
                           </div>
 
-                          <div className="grid gap-2">
+                           <div className="grid gap-2">
                             {displayTeam.drivers.map((driverId) => {
                               const driver = getDriverDetails(driverId);
+                              const staticDriver = staticDrivers.find(d => d.id.toLowerCase() === driverId.trim().toLowerCase());
                               return (
                                 <div
                                   key={driverId}
+                                  onMouseEnter={() => staticDriver && handleMouseEnterDriver(staticDriver)}
+                                  onMouseLeave={handleMouseLeaveDriver}
                                   className="flex items-center justify-between rounded-md bg-secondary/40 border border-border/40 p-2 hover:border-primary/30 transition-all hover:bg-secondary/60 relative overflow-hidden"
                                 >
                                   <div
                                     className="absolute left-0 top-0 bottom-0 w-1"
                                     style={{ backgroundColor: driver.teamColor }}
                                   />
-                                  <div className="flex items-center gap-2 pl-2">
-                                    <span className="text-sm">{driver.flag}</span>
-                                    <span className="text-xs font-semibold text-foreground uppercase tracking-wide">
-                                      {driver.name}
-                                    </span>
+                                  <div className="flex items-center gap-2.5 pl-2">
+                                    {staticDriver ? (
+                                      <div 
+                                        className="cursor-pointer hover:scale-105 transition-all shrink-0"
+                                        onClick={() => {
+                                          setSelectedDetailDriver(staticDriver);
+                                          clearHover();
+                                        }}
+                                        title="Click to view driver details"
+                                      >
+                                        <DriverAvatar driver={staticDriver} className="h-8 w-8" />
+                                      </div>
+                                    ) : (
+                                      <DriverAvatar driver={driver as any} className="h-8 w-8 shrink-0" />
+                                    )}
+                                    <div className="flex flex-col">
+                                      {staticDriver ? (
+                                        <span 
+                                          className="text-xs font-semibold text-foreground uppercase tracking-wide cursor-pointer hover:underline hover:text-primary transition-colors"
+                                          onClick={() => {
+                                            setSelectedDetailDriver(staticDriver);
+                                            clearHover();
+                                          }}
+                                          title="Click to view driver details"
+                                        >
+                                          {driver.name}
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs font-semibold text-foreground uppercase tracking-wide">
+                                          {driver.name}
+                                        </span>
+                                      )}
+                                      <span className="text-[0.6rem] text-muted-foreground flex items-center gap-1">
+                                        <span>{driver.flag}</span>
+                                        <span>{driver.nationality}</span>
+                                      </span>
+                                    </div>
                                   </div>
                                   <div className="flex flex-col items-end text-right">
                                     <span className="text-[0.65rem] text-muted-foreground uppercase tracking-wider">
@@ -744,17 +887,21 @@ const Leaderboard = () => {
                             <div className="grid grid-cols-2 gap-2">
                               {displayTeam.constructors.map((cId) => {
                                 if (!cId) return null;
-                                const constructor = getConstructorDetails(cId);
+                                const constructor = getConstructorDetails(cId) as Constructor;
                                 return (
                                   <div
                                     key={cId}
-                                    className="flex flex-col items-center justify-center rounded-md bg-secondary/40 border border-border/40 p-2.5 hover:border-primary/30 transition-all hover:bg-secondary/60 text-center"
+                                    onMouseEnter={() => constructor.id && handleMouseEnterConstructor(constructor)}
+                                    onMouseLeave={handleMouseLeaveConstructor}
+                                    onClick={() => clearHover()}
+                                    className="flex flex-col items-center justify-center rounded-md bg-secondary/40 border border-border/40 p-2 hover:border-primary/30 transition-all hover:bg-secondary/60 text-center relative overflow-hidden cursor-pointer"
                                   >
+                                    <ConstructorLivery constructor={constructor} className="h-6 w-auto object-contain mb-1" />
                                     <span className="text-xs font-bold text-foreground uppercase tracking-wider">
                                       {constructor.name}
                                     </span>
                                     {roundResults && (
-                                      <span className="text-[0.6rem] font-bold text-gradient-gold mt-1 animate-pulse">
+                                      <span className="text-[0.6rem] font-bold text-gradient-gold mt-0.5 animate-pulse">
                                         {getConstructorPoints(cId)}
                                       </span>
                                     )}
@@ -776,10 +923,132 @@ const Leaderboard = () => {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Scoring Reference / Telemetry scoring guide */}
+              <Card className="border border-border/60 bg-background/50 backdrop-blur-sm shadow-md overflow-hidden relative transition-all duration-300 hover:border-primary/30">
+                <CardHeader className="pb-2 bg-secondary/20 border-b border-border/60">
+                  <CardTitle className="text-xs font-bold tracking-widest flex items-center gap-2 uppercase text-foreground">
+                    <span>📊 Telemetry Scoring Guide</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 pt-3">
+                  <div className="flex gap-2 mb-3 border-b border-border pb-2">
+                    <button
+                      type="button"
+                      onClick={() => setLegendTab("drivers")}
+                      className={`flex-1 py-1 text-[0.65rem] font-bold uppercase tracking-wider rounded transition-all ${
+                        legendTab === "drivers"
+                          ? "bg-primary/20 text-primary border border-primary/30 glow-red"
+                          : "bg-secondary/20 text-muted-foreground border border-transparent hover:text-foreground hover:bg-secondary/40"
+                      }`}
+                    >
+                      🏎️ Drivers
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLegendTab("constructors")}
+                      className={`flex-1 py-1 text-[0.65rem] font-bold uppercase tracking-wider rounded transition-all ${
+                        legendTab === "constructors"
+                          ? "bg-primary/20 text-primary border border-primary/30 glow-red"
+                          : "bg-secondary/20 text-muted-foreground border border-transparent hover:text-foreground hover:bg-secondary/40"
+                      }`}
+                    >
+                      🛠️ Constructors
+                    </button>
+                  </div>
+
+                  {legendTab === "drivers" ? (
+                    <div className="grid grid-cols-2 gap-1 text-[0.65rem] leading-relaxed">
+                      <div className="flex justify-between items-center rounded bg-secondary/25 px-1.5 py-1 border-l-2 border-l-yellow-500">
+                        <span className="font-bold text-gradient-gold">P1 (25)</span>
+                        <span className="text-muted-foreground">Hammertime! 🏆</span>
+                      </div>
+                      <div className="flex justify-between items-center rounded bg-secondary/25 px-1.5 py-1 border-l-2 border-l-yellow-500">
+                        <span className="font-bold text-gradient-gold">P2 (18)</span>
+                        <span className="text-muted-foreground">Podium 🍾</span>
+                      </div>
+                      <div className="flex justify-between items-center rounded bg-secondary/25 px-1.5 py-1 border-l-2 border-l-yellow-500">
+                        <span className="font-bold text-gradient-gold">P3 (15)</span>
+                        <span className="text-muted-foreground">Champagne 🥂</span>
+                      </div>
+                      <div className="flex justify-between items-center rounded bg-secondary/25 px-1.5 py-1">
+                        <span className="font-bold text-foreground">P4 (12)</span>
+                        <span className="text-muted-foreground">Mega! ⚡</span>
+                      </div>
+                      <div className="flex justify-between items-center rounded bg-secondary/25 px-1.5 py-1">
+                        <span className="font-bold text-foreground">P5 (10)</span>
+                        <span className="text-muted-foreground">Solid 🏎️</span>
+                      </div>
+                      <div className="flex justify-between items-center rounded bg-secondary/25 px-1.5 py-1">
+                        <span className="font-bold text-foreground">P6 (8)</span>
+                        <span className="text-muted-foreground">Chasing 🏁</span>
+                      </div>
+                      <div className="flex justify-between items-center rounded bg-secondary/25 px-1.5 py-1">
+                        <span className="font-bold text-foreground">P7 (6)</span>
+                        <span className="text-muted-foreground">Pushing 🔋</span>
+                      </div>
+                      <div className="flex justify-between items-center rounded bg-secondary/25 px-1.5 py-1">
+                        <span className="font-bold text-foreground">P8 (4)</span>
+                        <span className="text-muted-foreground">Sneaked 🎟️</span>
+                      </div>
+                      <div className="flex justify-between items-center rounded bg-secondary/25 px-1.5 py-1">
+                        <span className="font-bold text-foreground">P9 (2)</span>
+                        <span className="text-muted-foreground">Counts 🔢</span>
+                      </div>
+                      <div className="flex justify-between items-center rounded bg-secondary/25 px-1.5 py-1">
+                        <span className="font-bold text-foreground">P10 (1)</span>
+                        <span className="text-muted-foreground">Squeezed 🤏</span>
+                      </div>
+                      <div className="col-span-2 flex justify-between items-center rounded bg-red-950/20 px-1.5 py-1 border-l-2 border-l-red-500 text-red-200 mt-1">
+                        <span className="font-bold">P11+ / DNF (0)</span>
+                        <span className="text-[0.6rem] text-red-200/70">"Bono, my tyres are gone!" 💀</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[0.65rem] space-y-1.5 text-muted-foreground leading-normal">
+                      <p className="font-semibold text-foreground">Double Trouble! Sum of both drivers.</p>
+                      <p>Constructors earn the sum of points scored by both of their drivers.</p>
+                      <div className="rounded border border-border bg-secondary/25 p-1.5 font-mono text-[0.6rem] text-foreground">
+                        Example: Leclerc P1 (25 pts) + Hamilton P2 (18 pts) = Ferrari scores <span className="font-bold text-gradient-gold">43 points</span>.
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </>
       )}
+      {selectedDetailDriver && (
+        <DriverDetailsModal
+          driver={selectedDetailDriver}
+          onClose={() => setSelectedDetailDriver(null)}
+        />
+      )}
+
+      <DriverHoverPreview 
+        driver={hoveredDriver} 
+        onMouseEnter={() => {
+          if (leaveTimeoutRef.current) {
+            clearTimeout(leaveTimeoutRef.current);
+            leaveTimeoutRef.current = null;
+          }
+        }}
+        onMouseLeave={handleMouseLeaveDriver}
+        onClose={clearHover}
+      />
+
+      <ConstructorHoverPreview 
+        constructor={hoveredConstructor} 
+        onMouseEnter={() => {
+          if (leaveTimeoutRef.current) {
+            clearTimeout(leaveTimeoutRef.current);
+            leaveTimeoutRef.current = null;
+          }
+        }}
+        onMouseLeave={handleMouseLeaveConstructor}
+        onClose={clearHover}
+      />
       </div>
     </div>
   );

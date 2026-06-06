@@ -61,7 +61,7 @@ const Login = () => {
       const msgLower = msg.toLowerCase();
       if (msgLower.includes("rate limit") || error.status === 429) {
         toast.warning(
-          "Email limit hit. Please try again in a few minutes, or configure a custom SMTP provider in your Supabase Dashboard."
+          "Too many password reset requests. Please wait a few minutes and try again."
         );
       } else if (
         msgLower.includes("smtp") ||
@@ -71,7 +71,7 @@ const Login = () => {
         msgLower.includes("error sending")
       ) {
         toast.error(
-          `Email failed: ${msg}. Tip: Set up a custom SMTP provider (e.g. Resend or SendGrid) in Supabase Dashboard → Project Settings → Auth to bypass default rate limits!`
+          "We could not send the password reset email. Please try again later."
         );
       } else {
         toast.error(msg || "Could not send reset email. Please try again in a minute.");
